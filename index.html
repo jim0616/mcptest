@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>踩地雷</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-gap: 1px;
+    border: 1px solid #000;
+  }
+  .cell {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 20px;
+    background-color: #ccc;
+    cursor: pointer;
+  }
+  .cell.revealed {
+    background-color: #eee;
+    cursor: default;
+  }
+  .cell.mine {
+    background-color: red;
+  }
+</style>
+</head>
+<body>
+<h1>踩地雷</h1>
+<div id="game"></div>
+<script>
+  const grid = document.getElementById('game');
+  const width = 10;
+  const height = 10;
+  const mines = 10;
+  let cells = [];
+  let gameOver = false;
+
+  function createGrid() {
+    for (let i = 0; i < width * height; i++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.dataset.index = i;
+      cell.addEventListener('click', cellClick);
+      grid.appendChild(cell);
+      cells.push(cell);
+    }
+  }
+
+  function plantMines() {
+    let mineCount = 0;
+    while (mineCount < mines) {
+      const index = Math.floor(Math.random() * width * height);
+      if (!cells[index].classList.contains('mine')) {
+        cells[index].classList.add('mine');
+        mineCount++;
+      }
+    }
+  }
+
+  function calculateNumbers() {
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        const index = x + y * width;
+        if (!cells[index].classList.contains('mine')) {
+          let count = 0;
+          for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+              const neighborX = x + i;
+              const neighborY = y + j;
+              if (neighborX >= 0 && neighborX < width && neighborY >= 0 && neighborY < height) {
+                const neighborIndex = neighborX + neighborY * width;
+                if (cells[neighborIndex].classList.contains('mine')) {
+                  count++;
+                }
+              }
+            }
+          }
+          if (count > 0) {
+            cells[index].dataset.number = count;
+          }
+        }
+      }
+    }
+  }
+
+  function cellClick(event) {
+    if (gameOver) return;
+    const cell = event.target;
+    const index = parseInt(cell.dataset.index);
+
+    if (cell.classList.contains('revealed')) return;
+    cell.classList.add('revealed');
+
+    if (cell.classList.contains('mine')) {
+      cell.textContent = '💣';
+      gameOver = true;
+      revealMines();
+      alert('你踩到地雷了！');
+    } else {
+      const number = cell.dataset.number;
+      if (number) {
+        cell.textContent = number;
+      } else {
+        revealEmpty(index);
+      }
+    }
+  }
+
+  function revealEmpty(index) {
+    const x = index % width;
+    const y = Math.floor(index / width);
+
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const neighborX = x + i;
+        const neighborY = y + j;
+        if (neighborX >= 0 && neighborX < width && neighborY >= 0 && neighborY < height) {
+          const neighborIndex = neighborX + neighborY * width;
+          const neighborCell = cells[neighborIndex];
+          if (!neighborCell.classList.contains('revealed')) {
+            neighborCell.classList.add('revealed');
+            const number = neighborCell.dataset.number;
+            if (number) {
+              neighborCell.textContent = number;
+            } else {
+              revealEmpty(neighborIndex);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function revealMines() {
+    for (let i = 0; i < width * height; i++) {
+      if (cells[i].classList.contains('mine')) {
+        cells[i].classList.add('revealed');
+        cells[i].textContent = '💣';
+      }
+    }
+  }
+
+  createGrid();
+  plantMines();
+  calculateNumbers();
+
+  grid.classList.add('grid');
+</script>
+</body>
+</html>
